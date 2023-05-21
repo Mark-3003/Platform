@@ -14,6 +14,7 @@ public class PlayerMovement : MonoBehaviour
     public float gravity;
 
     public LayerMask groundMask;
+    public LayerMask groundMovingMask;
 
     [Header("Items")]
     public Transform[] groundCheck;
@@ -27,6 +28,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 velocity;
 
     public bool grounded;
+    public bool groundMoving;
     public bool grabbingWall;
     public int wallCollision;
     public bool touchingObject;
@@ -44,7 +46,7 @@ public class PlayerMovement : MonoBehaviour
     {
         xyMovement = Input.GetAxisRaw("Horizontal");
 
-        if (!grounded)
+        if (!grounded && !groundMoving)
         {
             activeSpeed = speed * 1.2f;
         }
@@ -57,7 +59,7 @@ public class PlayerMovement : MonoBehaviour
             rb.position += new Vector2(xyMovement * activeSpeed, 0) * Time.deltaTime;
         UpdateCollisionDetection();
 
-        if (grounded)
+        if (grounded || groundMoving)
         {
             wallJumps = wjs;
             velocity.x = 0;
@@ -101,23 +103,26 @@ public class PlayerMovement : MonoBehaviour
                 rb.velocity = new Vector2(0, rb.velocity.y);
             }
         }
-        void UpdateCollisionDetection()
+    }
+    void UpdateCollisionDetection()
+    {
+        grounded = false;
+        groundMoving = false;
+        for (int i = 0; i < groundCheck.Length; i++)
         {
-            grounded = false;
-            for(int i = 0; i < groundCheck.Length; i++)
-            {
-                if(!grounded)
-                    grounded = Physics2D.CircleCast(groundCheck[i].position, 0.05f, Vector2.down, 0.05f, groundMask);
-            }
+            if (!grounded)
+                grounded = Physics2D.CircleCast(groundCheck[i].position, 0.05f, Vector2.down, 0.05f, groundMask);
+            if (!groundMoving)
+                groundMoving = Physics2D.CircleCast(groundCheck[i].position, 0.05f, Vector2.down, 0.05f, groundMovingMask);
+        }
 
-            if (Physics2D.CircleCast(leftCheck.position, 0.2f, Vector2.left, 0.2f, groundMask))
-            {
-                wallCollision = 1;
-            }
-            else if (Physics2D.CircleCast(rightCheck.position, 0.2f, Vector2.right, 0.2f, groundMask))
-            {
-                wallCollision = -1;
-            }
+        if (Physics2D.CircleCast(leftCheck.position, 0.2f, Vector2.left, 0.2f, groundMask))
+        {
+            wallCollision = 1;
+        }
+        else if (Physics2D.CircleCast(rightCheck.position, 0.2f, Vector2.right, 0.2f, groundMask))
+        {
+            wallCollision = -1;
         }
     }
     private void OnCollisionEnter2D(Collision2D col)
